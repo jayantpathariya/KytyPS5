@@ -34,6 +34,8 @@ struct Settings {
 	float             max_rad = 40.0f * PI / 180.0f;
 	bool              invert_x = false;
 	bool              invert_y = false;
+	// A press switches the tilt on and off: Windows opens Task View while the Xbox button is held.
+	bool tilt_toggle = true;
 };
 
 SDL_GamepadButton ButtonSetting(const char* name, SDL_GamepadButton fallback) {
@@ -77,6 +79,9 @@ Settings ReadSettings() {
 	if (const char* invert = std::getenv("KYTY_PAD_TILT_INVERT"); invert != nullptr) {
 		s.invert_x = std::strchr(invert, 'x') != nullptr;
 		s.invert_y = std::strchr(invert, 'y') != nullptr;
+	}
+	if (const char* mode = std::getenv("KYTY_PAD_TILT_MODE"); mode != nullptr) {
+		s.tilt_toggle = std::strcmp(mode, "hold") != 0;
 	}
 	return s;
 }
@@ -277,9 +282,13 @@ bool OnButton(int id, int sdl_button, bool down) {
 		return true;
 	}
 	if (p->tilt && sdl_button == s.tilt) {
-		if (p->tilt_held != down) {
-			SetTilt(*p, down);
+		const bool on = s.tilt_toggle ? (down ? !p->tilt_held : p->tilt_held) : down;
+		if (p->tilt_held != on) {
+			SetTilt(*p, on);
 			g_next_poll_ms = 0;
+			if (s.tilt_toggle) {
+				LOGF("Gamepad extras: tilt %s\n", on ? "on" : "off");
+			}
 		}
 		return true;
 	}
