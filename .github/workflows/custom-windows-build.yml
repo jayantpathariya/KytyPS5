@@ -3,6 +3,9 @@ name: Custom Windows build
 # Manual build of this branch with the release toolchain and PGO profile, tuned for one CPU
 # (KYTY_MARCH). The package is kept as a workflow artifact; nothing is published.
 on:
+  push:
+    branches:
+      - generic-pad-extras
   workflow_dispatch:
     inputs:
       march:
@@ -99,7 +102,7 @@ jobs:
             -DKYTY_BUILD_ORIGIN=Fork ^
             -DKYTY_BUILD_REPOSITORY=%GITHUB_REPOSITORY% ^
             -DKYTY_RELEASE_TAG=custom-%GITHUB_RUN_NUMBER% ^
-            -DKYTY_MARCH="${{ inputs.march }}" ^
+            -DKYTY_MARCH="${{ inputs.march || 'alderlake' }}" ^
             -DCMAKE_C_COMPILER=%LLVM%/clang-cl.exe ^
             -DCMAKE_CXX_COMPILER=%LLVM%/clang-cl.exe ^
             -DCMAKE_LINKER=%LLVM%/lld-link.exe ^
@@ -182,6 +185,6 @@ jobs:
       - name: Upload build
         uses: actions/upload-artifact@v4
         with:
-          name: KytyPS5-U59-Windows-x64-${{ inputs.march }}
+          name: KytyPS5-U59-Windows-x64-${{ inputs.march || 'alderlake' }}
           path: ${{ steps.package.outputs.archive }}
           compression-level: 0
