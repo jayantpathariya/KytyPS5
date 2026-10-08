@@ -18,6 +18,7 @@
 #include "graphics/host_gpu/vulkanCommon.h"
 #include "graphics/presentation/renderDoc.h"
 #include "graphics/presentation/systemOverlay.h"
+#include "graphics/presentation/window/gamepadExtras.h"
 #include "graphics/presentation/window/hostInput.h"
 #include "graphics/presentation/window/windowInternal.h"
 #include "kytyGitVersion.h"
@@ -315,23 +316,25 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
 		}
 		int id = SDL_GetJoystickID(SDL_GetGamepadJoystick(pad));
 		Controller::Connect(id);
+		GamepadExtras::OnAdded(pad, id);
 	}
 
 	if (f.removed) {
 		if (auto* pad = SDL_GetGamepadFromID(f.id); pad != nullptr) {
+			GamepadExtras::OnRemoved(f.id);
 			Controller::Disconnect(f.id);
 			SDL_CloseGamepad(pad);
 		}
 	}
 
-	if (f.down || f.up) {
+	if ((f.down || f.up) && !GamepadExtras::OnButton(f.id, f.button, f.down)) {
 		const auto button = ControllerButtonToPadButton(f.button);
 		if (button != 0) {
 			Controller::SetButton(f.id, button, f.down);
 		}
 	}
 
-	if (f.axis) {
+	if (f.axis && !GamepadExtras::OnAxis(f.id, f.axis_id, f.axis_value)) {
 		const auto axis = ControllerAxisFromSdl(f.axis_id);
 		if (axis != Controller::Axis::AxisMax) {
 			Controller::SetAxis(f.id, axis,

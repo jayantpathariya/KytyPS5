@@ -112,6 +112,7 @@ public:
 	void RightStick(int id, int x, int y);
 	void TouchPad(int id, int finger, bool down, float x, float y);
 	void Motion(int id, Sensor sensor, const float* data, uint64_t time_us);
+	void VirtualMotion(int id, const float* accel, const float* gyro, const float* orientation);
 	void SetMotionSensorState(bool enable);
 	void ResetOrientation();
 	void ResetInputState();
@@ -684,6 +685,19 @@ void GameController::Motion(int id, Sensor sensor, const float* data, uint64_t t
 	AddState();
 }
 
+void GameController::VirtualMotion(int id, const float* accel, const float* gyro,
+                                   const float* orientation) {
+	Common::LockGuard lock(m_mutex);
+	if (id != m_active_id || !m_motion_enabled) {
+		return;
+	}
+	std::copy_n(accel, 3, m_state.accel.begin());
+	std::copy_n(gyro, 3, m_state.gyro.begin());
+	std::copy_n(orientation, 4, m_state.orientation.begin());
+	m_state.time = LibKernel::KernelGetProcessTime();
+	AddState();
+}
+
 void GameController::SetMotionSensorState(bool enable) {
 	Common::LockGuard lock(m_mutex);
 	if (m_motion_enabled != enable) {
@@ -976,6 +990,10 @@ void SetTouchPad(int id, int finger, bool down, float x, float y) {
 
 void SetSensor(int id, Sensor sensor, const float* data, uint64_t time_us) {
 	g_controller->Motion(id, sensor, data, time_us);
+}
+
+void SetVirtualMotion(int id, const float* accel, const float* gyro, const float* orientation) {
+	g_controller->VirtualMotion(id, accel, gyro, orientation);
 }
 
 void ResetInputState() {

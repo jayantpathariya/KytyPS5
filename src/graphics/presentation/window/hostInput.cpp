@@ -1,4 +1,5 @@
 #include "graphics/presentation/window/hostInput.h"
+#include "graphics/presentation/window/gamepadExtras.h"
 #include "graphics/presentation/window/hostInputPulse.h"
 
 #include <SDL3/SDL.h>
@@ -489,6 +490,9 @@ bool HostInputWaitEvent(SDL_Event* event) {
 		const int mouse_wait = PollMouse(SDL_GetTicks());
 		timeout              = timeout < 0 ? mouse_wait : std::min(timeout, mouse_wait);
 	}
+	if (const int tilt_wait = GamepadExtras::Poll(SDL_GetTicks()); tilt_wait >= 0) {
+		timeout = timeout < 0 ? tilt_wait : std::min(timeout, tilt_wait);
+	}
 
 	if (g_cursor_hide_at != 0) {
 		const auto now_ms = SDL_GetTicks();
@@ -517,6 +521,7 @@ bool HostInputWaitEvent(SDL_Event* event) {
 	    event->window.windowID == SDL_GetWindowID(g_mouse_window)) {
 		Common::HostInputTrace("focus-lost", 0, 0);
 		g_input_pulse.ReleaseAll(ApplyHostKey);
+		GamepadExtras::ReleaseAll();
 		g_mouse.next_poll = 0;
 		CenterMouseStick();
 	}

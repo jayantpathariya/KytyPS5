@@ -72,6 +72,9 @@ void SetAxis(int id, Axis axis, int value);
 void SetRightStick(int id, int x, int y);
 void SetTouchPad(int id, int finger, bool down, float x, float y);
 void SetSensor(int id, Sensor sensor, const float* data, uint64_t time_us);
+// Motion for a pad without sensors (window/gamepadExtras): acceleration in G, angular velocity in
+// rad/s, orientation as x, y, z, w; stored as they are, without the sensor fusion of SetSensor.
+void SetVirtualMotion(int id, const float* accel, const float* gyro, const float* orientation);
 void ResetInputState();
 int  GetActiveControllerId();
 
