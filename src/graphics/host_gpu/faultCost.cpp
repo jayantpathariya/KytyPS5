@@ -152,6 +152,7 @@ std::atomic<double> g_live_tighten_fixed_us {-1.0};
 // SlowLevel(): the tracker runs on the command processor thread (and once at startup, before it).
 SlowLevelTracker g_slow_tracker;
 std::atomic<int> g_slow_level {0};
+std::atomic<int> g_startup_slow_level {0};
 
 Benchmark g_benchmark;
 Benchmark g_benchmark_uffd; // Linux with KYTY_UFFD_WP: the write-protection actually in use
@@ -900,6 +901,7 @@ void RunStartupBenchmark() {
 			why = "Linux mprotect tracking";
 		}
 #endif
+		g_startup_slow_level.store(g_slow_tracker.Level(), std::memory_order_relaxed);
 		if (g_slow_tracker.Level() != 0) {
 			g_slow_level.store(g_slow_tracker.Level(), std::memory_order_relaxed);
 			std::printf("Kyty fault cost: write tracking is slow on this PC (%s): level %d\n", why,
@@ -952,6 +954,10 @@ CostModel Model() {
 
 int SlowLevel() noexcept {
 	return g_slow_level.load(std::memory_order_relaxed);
+}
+
+int StartupSlowLevel() noexcept {
+	return g_startup_slow_level.load(std::memory_order_relaxed);
 }
 
 void SlowLevelTracker::Seed(double tighten_call_us, double fault_round_trip_us) noexcept {

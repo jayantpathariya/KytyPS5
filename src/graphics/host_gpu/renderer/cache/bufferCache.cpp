@@ -86,7 +86,9 @@ Live::Switch g_binding_hot_memo("KYTY_CP_BINDING_HOT_MEMO", Live::ParseDefaultOf
 // (MemoryTracker::SetFaultAheadOverride, applied at every guest flip).
 //   auto   (default) 256 KiB, 512 KiB or 1 MiB by FaultCost::SlowLevel() 0 / 1 / 2: how slow
 //          protection changes are on this PC (measured, only ever rising; Linux with mprotect
-//          tracking: 1 MiB from the start)
+//          tracking: 1 MiB from the start). Windows uses FaultCost::StartupSlowLevel(), the
+//          uncontended cost, instead: the live level rose with the window's own contention on a
+//          12-thread laptop, where 1 MiB was the slowest of 128 KiB, 256 KiB and 1 MiB.
 //   <KiB>  a power of two, 8..4096
 //   0      KYTY_FAULT_AHEAD_KB alone (32 KiB), as before
 // At the Sky Garden the guest's job threads fill ~16 MB of triple-buffered data per frame. With
@@ -120,7 +122,13 @@ uint32_t FaultAheadOverridePages() {
 	}
 	uint64_t kib = static_cast<uint64_t>(value);
 	if (value == -2) {
-		kib = uint64_t {256} << std::clamp(FaultCost::SlowLevel(), 0, 2);
+#if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
+		// The live level also measures the contention a larger window causes (faultCost.h).
+		const int level = FaultCost::StartupSlowLevel();
+#else
+		const int level = FaultCost::SlowLevel();
+#endif
+		kib = uint64_t {256} << std::clamp(level, 0, 2);
 	}
 	return static_cast<uint32_t>(kib * 1024 / TRACKER_PAGE_SIZE);
 }

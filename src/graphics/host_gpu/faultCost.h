@@ -87,6 +87,12 @@ struct CostModel {
 //   against 2.1 ms at 256 KiB and 35-44 ms at 32 KiB).
 // The level only ever rises; "Kyty fault cost: write tracking is slow ..." logs each step.
 [[nodiscard]] int SlowLevel() noexcept;
+// The level as the startup benchmark (and a platform floor) set it, before any live update: what the
+// PC's protection calls cost uncontended. On a PC with few cores the live measure also rises with the
+// contention that a larger fault-ahead window itself causes (i5-12450H, 12 logical processors: auto
+// went to 1 MiB and the guest threads spent ~44 ms per frame in faults, against ~30 ms at a fixed
+// 256 KiB and ~13 fps against ~16), so the Windows window follows this level.
+[[nodiscard]] int StartupSlowLevel() noexcept;
 
 // The level logic on its own (SlowLevel uses one, on the command processor thread; tests).
 class SlowLevelTracker {
